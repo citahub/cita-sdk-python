@@ -1,2 +1,3 @@
-# cita-sdk-python
-CITA SDK for Python
+# pycita
+
+CITA Python SDK.
