@@ -10,7 +10,7 @@ from pycita import equal_param, encode_param, decode_param, join_param, param_to
 
 
 # Change to your own cita rpc endpoint.
-# CITA_URL = 'http://127.0.0.1:1337'
+CITA_URL = 'http://127.0.0.1:1337'
 
 client = CitaClient(CITA_URL)
 # client = CitaClient('https://testnet.citahub.com')
