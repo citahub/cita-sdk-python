@@ -1,3 +1,0 @@
-# pycita
-
-CITA Python SDK.

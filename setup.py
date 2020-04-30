@@ -22,32 +22,37 @@ with open('requirements.txt', 'r') as f:
     install_requires = f.read().splitlines()
 
 
-module_name = 'pycita'
+module_name = 'cita'
 mod = importlib.import_module(module_name)
 
 
 setup(
-    name=mod.__name__,
+    name='cita_sdk_python',
     version=mod.__version__,
     description=mod.__description__,
     long_description=u"\n\n".join([readme, changes]),
+    platforms=['Windows', 'Mac OS-X', 'Linux', 'Unix'],
+    license='Apache License 2.0',
     classifiers=[
         'Intended Audience :: Developers',
-        "Operating System :: OS Independent",
+        'Development Status :: 4 - Beta',
+        'Operating System :: MacOS',
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: Unix',
+        'License :: OSI Approved :: Apache License, Version 2.0 (Apache-2.0)',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
-    keywords='nameko rpc',
+    keywords='cita blockchain',
 
     author=mod.__author__,
     author_email=mod.__email__,
     url=mod.__url__,
 
-    packages=['pycita'],
+    packages=['cita'],
     package_dir={'': 'src'},  # tell distutils packages are under src
-    python_requires='>=3.6, <4',
+    python_requires='>=3.7, <4',
     setup_requires=setup_requires,
     install_requires=install_requires,
 

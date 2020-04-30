@@ -36,7 +36,7 @@ contract SimpleStorage {
     }
 
     // 只读方法.
-    function get() public constant returns (uint) {
+    function get() public view returns (uint) {
         return x;
     }
 }

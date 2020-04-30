@@ -18,8 +18,8 @@ import importlib
 
 # -- Project information -----------------------------------------------------
 
-project = 'pycita'
-mod = importlib.import_module(project)
+project = 'cita-sdk-python'
+mod = importlib.import_module('cita')
 
 author = mod.__author__
 copyright = f'{date.today().year}, {author}.'

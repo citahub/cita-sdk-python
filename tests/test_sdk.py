@@ -5,15 +5,13 @@ from pathlib import Path
 import json
 import pytest
 
-from pycita import CitaClient, ContractClass
-from pycita import equal_param, encode_param, decode_param, join_param, param_to_bytes, param_to_str
+from cita import CitaClient, ContractClass
+from cita import equal_param, encode_param, decode_param, join_param, param_to_bytes, param_to_str
 
 
 # Change to your own cita rpc endpoint.
-# CITA_URL = 'http://127.0.0.1:1337'
-
+CITA_URL = 'http://127.0.0.1:1337'
 client = CitaClient(CITA_URL)
-# client = CitaClient('https://testnet.citahub.com')
 
 
 def test_create_key():
@@ -99,7 +97,6 @@ def test_get_abi_bad():
     assert r == b''
 
 
-@pytest.mark.only
 def test_decode_transaction_content():
     r = client.decode_transaction_content('0x0aae03122032626131393465636637633034323333623862383764346633353938343061311880ade2042097ce0d2aa4024b2173f53863643239306334326138383430303361396234643566613263313665346138000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a1789c8bae562ac9cc4d55b25232323032d03530d4353650d2514a2bcacf058abdd8d6fa7cd7f2a7adcdcf364c313035303bb4fd65d364a0205004a82825b53819bfa2a7fd4d4f76f43ddfd4f964c7dca7b317bd689cf27442c7d309139fed9cf6b467fad3b5739fb5cc7fba03a866edd3fdcd4f7b76bf9cb9e859ef84175b173c6e986064f2b861e2931dab9e752d793e7bddcba973946a7586926363010adec36d000000000000000000000000000000000000000000000000000000000000003220000000000000000000000000000000000000000000000000000000000000000040024a14a26afce7d4bf0308b38970b1dadf6adfea2c7501522000000000000000000000000000000000000000000000000000000000000000011241f098ce3832fc5bd467083119292ec1a7e2239784f7734204fdf5e01d84a4e63c2b37cb4a05ef919c5ada1db6775c86dadacaf69f53fd54f09efb326d6b658e0601')
     assert r['transaction']['nonce'] == '2ba194ecf7c04233b8b87d4f359840a1'
@@ -238,8 +235,10 @@ def test_batch_call():
     print('批量实例化...')
     init_values = [(), (), ()]
     obj_list = []
-    for dummy_obj, contract_addr, tx_hash in dummy_class.batch_instantiate(private_key, obj_list):  # 使用0个参数
+    for dummy_obj, contract_addr, tx_hash in dummy_class.batch_instantiate(private_key, init_values):  # 使用0个参数
+        obj_list.append(dummy_obj)
         client.get_transaction_receipt(tx_hash)
+    assert len(obj_list) == 3
 
     init_values = [100, 200, (300,)]
     obj_list = []
@@ -291,5 +290,3 @@ def test_generate_account():
     assert pri_key == pri_key2
     assert pub_key == pub_key2
     assert addr == addr2
-
-# 226, 249, 313, 337, 358, 403, 443, 458, 473, 544

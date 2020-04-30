@@ -1,0 +1,24 @@
+language: python
+
+services:
+  - docker
+
+python:
+  - "3.7"
+
+before_install:
+  - docker pull ethereum/solc:0.4.24
+  - docker run -d --name test_cita -p 1337:1337 cita/cita-ce:20.2.0-secp256k1-sha3
+    /bin/bash -c 'cd /opt/cita/bin &&
+                  ./cita create --super_admin "0x141d051b1b1922bf686f5df8aad45cefbcb0b696" --nodes "127.0.0.1:4000" &&
+                  ./cita setup test-chain/0 &&
+                  ./cita start test-chain/0 &&
+                  sleep 1000'
+  - pip install -r requirements_dev.txt
+
+script:
+  - make sol
+  - make test
+
+after_success:
+  - coveralls
