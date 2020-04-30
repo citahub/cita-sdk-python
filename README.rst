@@ -125,11 +125,11 @@ CITA Python SDK
 .. |Python| image:: https://img.shields.io/badge/Python-3.7-blue?logo=python&logoColor=white
     :alt: PyPI - Python Versions
 
-.. |Travis| image:: https://travis-ci.org/melonux/cita-sdk-python.svg?branch=dev
-    :target: https://travis-ci.org/melonux/cita-sdk-python
+.. |Travis| image:: https://travis-ci.com/citahub/cita-sdk-python.svg?branch=master
+    :target: https://travis-ci.com/citahub/cita-sdk-python
 
-.. |Coverage| image:: https://coveralls.io/repos/github/melonux/cita-sdk-python/badge.svg?branch=dev
-    :target: https://coveralls.io/github/melonux/cita-sdk-python?branch=dev
+.. |Coverage| image:: https://coveralls.io/repos/github/citahub/cita-sdk-python/badge.svg?branch=master
+    :target: https://coveralls.io/github/citahub/cita-sdk-python?branch=master
 
 .. |License| image:: https://img.shields.io/badge/License-Apache%202.0-blue.svg
     :target: https://opensource.org/licenses/Apache-2.0
