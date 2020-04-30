@@ -1,4 +1,3 @@
-PROJ := pycita
 TESTS ?= tests  # 测试的目标, 默认是./tests目录
 SOL_INPUTS := $(wildcard tests/*.sol)
 SOL_OUTPUTS := $(patsubst %.sol,%.bin,$(SOL_INPUTS))
@@ -23,8 +22,11 @@ test: $(SOL_OUTPUTS) # 运行测试
 only: $(SOL_OUTPUTS) # 只运行打了 @pytest.mark.only 注解的测试
 	PYTHONPATH=$(PWD)/src pytest -m only --cov=src -vv $(TESTS)
 
-dist:  ## builds source and wheel package
+dist: setup.py setup.cfg MANIFEST.in  ## builds source and wheel package
 	PYTHONPATH=$(PWD)/src python setup.py sdist
 	PYTHONPATH=$(PWD)/src python setup.py bdist_wheel
 	ls -l dist
 
+# PROJ := cita
+# upload_doc: doc
+# 	PYTHONPATH=$(PWD)/src python docs/upload_doc.py $(PROJ) SERVICE_API $(PROJ) docs/_build/docs.tar.gz

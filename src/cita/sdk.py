@@ -139,7 +139,7 @@ class CitaClient:
         r = self._jsonrpc('sendRawTransaction', [param_to_str(data)])
         return cast(Dict, r)['hash']
 
-    def send_transaction(self, private_key: PARAM, to_addr: PARAM, code: PARAM, value: int = 0, quota: int = DEFAULT_QUOTA, max_wait_block: int = 88):
+    def send_transaction(self, private_key: PARAM, to_addr: PARAM, code: PARAM, value: int = 0, quota: int = DEFAULT_QUOTA, max_wait_block: int = 88) -> str:
         """
         发送完整交易数据.
 
@@ -149,7 +149,7 @@ class CitaClient:
         :param value: 金额.
         :param quota: 调用配额.
         :param max_wait_block: 交易至多等待多少个区块. 默认88.
-        :return: 签名后的bytes.
+        :return: 交易hash.
         """
         block_number = self.get_latest_block_number()
         data = self.signer.make_raw_tx(param_to_bytes(private_key),
@@ -165,21 +165,21 @@ class CitaClient:
         :param private_key: 私钥
         :param code: 编译后的合约
         :param params: 合约构造函数的参数经encode_param编码后的bytes. 无参数用 b''
-        :return: 交易回执地址
+        :return: 交易hash.
         """
         return self.send_transaction(private_key, b'', param_to_bytes(join_param(code, param)))
 
-    def confirm_transaction(self, hash_addr: PARAM, timeout: int = -1) -> Dict:
+    def confirm_transaction(self, tx_hash: PARAM, timeout: int = -1) -> Dict:
         """
         等待交易完成.
 
-        :param hash_addr: 回执地址, 32字节
+        :param tx_hash: 交易hash.
         :param timeout: 等待回执的时间, 单位秒. -1: 一直等待回执; 0: 无论是否达成共识, 直接返回; 其他值表示超时时间
         :return: 回执结果.
         """
         r: Dict = {}
         t0 = time.time()
-        r = self.get_transaction_receipt(hash_addr, 0)
+        r = self.get_transaction_receipt(tx_hash, 0)
 
         # 先获得交易回执
         while 'blockNumber' not in r:
@@ -187,7 +187,7 @@ class CitaClient:
             t1 = time.time()
             if t1 - t0 >= timeout != -1:
                 raise RuntimeError('timeout')
-            r = self.get_transaction_receipt(hash_addr, 0)
+            r = self.get_transaction_receipt(tx_hash, 0)
 
         this_block = ast.literal_eval(r['blockNumber'])
         while self.get_latest_block_number() - this_block < 1:  # cita是先共识交易顺序, 后执行交易, 下个块公布上次答案, 所以会差1个块.
@@ -197,18 +197,18 @@ class CitaClient:
                 raise RuntimeError('timeout')
         return r
 
-    def get_transaction_receipt(self, hash_addr: PARAM, timeout: int = -1) -> Dict:
+    def get_transaction_receipt(self, tx_hash: PARAM, timeout: int = -1) -> Dict:
         """
         查看回执结果.
 
-        :param hash_addr: 回执地址, 32字节
+        :param tx_hash: 交易hash.
         :param timeout: 等待回执的时间, 单位秒. -1: 一直等待回执; 0: 无论有无回执, 直接返回; 其他值表示超时时间
         :return: 回执结果. 如果交易还没执行且timeout=0, 则返回{}. 否则表示在pending区块中已经加入此交易, 期待共识
         """
         t0 = time.time()
 
         while 1:
-            r = self._jsonrpc('getTransactionReceipt', [param_to_str(hash_addr)])
+            r = self._jsonrpc('getTransactionReceipt', [param_to_str(tx_hash)])
             if r is None:
                 r = {}
             assert isinstance(r, dict)
@@ -587,6 +587,7 @@ class ContractProxy:
     def set_call_mode(self, mode):
         """
         设置读取只读方法时, 是使用已确认区块的数据, 还是待确认区块的数据.
+
         :param mode: 默认'latest', 使用已确认区块; 'pending', 使用待确认区块.
         """
         assert mode in ('latest', 'pending')
@@ -598,7 +599,7 @@ class ContractProxy:
 
         :param func_addr: 合约方法地址.
         :param args: 参数, 需配合合约方法的 param_type.
-        :return 对普通方法返回tx_hash, 对只读方法返回解码后的返回值.
+        :return: 对普通方法返回tx_hash, 对只读方法返回解码后的返回值.
         """
         abi = self.func_mapping__[func_addr]
 
