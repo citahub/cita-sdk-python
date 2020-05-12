@@ -134,14 +134,14 @@ def test_client():
     r = client.call_readonly_func(contract_addr, simple_obj.get.address, from_addr=user_addr)
     assert decode_param('uint', r) == value
     assert simple_obj.get() == value  # 因为交易还未被确认.
-    simple_obj.set_call_mode('pending')
+    client.set_call_mode('pending')
     assert simple_obj.get() == new_value  # 读取未确认的数据.
 
     client.confirm_transaction(tx_hash)
 
     # 读取状态
     assert simple_obj.get() == new_value
-    simple_obj.set_call_mode('latest')
+    client.set_call_mode('latest')
     assert simple_obj.get() == new_value  # 交易已确认.
 
 

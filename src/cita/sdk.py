@@ -24,22 +24,37 @@ class CitaClient:
 
     注意成员函数的参数, 如果是Union[str, bytes] 和返回值的编码都使用bytes, 以避免是否要加0x的困惑
     """
-    def __init__(self, url: str, timeout: int = 10, crypto_method: str = 'secp256k1', version: int = LATEST_VERSION, chain_id: int = 1):
+    def __init__(self, url: str, timeout: int = 10, call_mode: str = 'latest', crypto_method: str = 'secp256k1', version: int = LATEST_VERSION, chain_id: int = 1):
         """
         指定cita环境.
 
         :param url: cita后端服务的url
+        :param call_mode: 调用时使用已确认区块 `latest` , 还是待确认区块 `pending`
         :param timeout: JSON RPC或cita-cli的调用超时时间, 单位秒
         :param crypto_method: 加密机制. 默认secp256k1
         :param version: 链的版本, 默认为 2
         :param chain_id: 链id, 默认为 1
         """
+        if call_mode not in ('latest', 'pending'):
+            raise ValueError('call_mode must be `latest` or `pending`')
+
         self.url = url
+        self.call_mode = call_mode
         self.timeout = timeout
         if crypto_method == 'secp256k1':
             self.signer = SignerSecp256k1(version, chain_id)
         else:
             raise NotImplementedError(crypto_method)
+
+    def set_call_mode(self, mode):
+        """
+        设置调用只读方法时, 是使用已确认区块的数据, 还是待确认区块的数据.
+
+        :param mode: 默认'latest', 使用已确认区块; 'pending', 使用待确认区块.
+        """
+        if mode not in ('latest', 'pending'):
+            raise ValueError('call_mode must be `latest` or `pending`')
+        self.call_mode = mode
 
     def _jsonrpc(self, method: str, params: List) -> Union[None, str, Dict, List]:
         """
@@ -126,7 +141,7 @@ class CitaClient:
         """
         查询链上元数据.
         """
-        r = self._jsonrpc('getMetaData', ['latest'])
+        r = self._jsonrpc('getMetaData', [self.call_mode])
         return cast(Dict, r)
 
     def send_raw_transaction(self, data: PARAM) -> str:
@@ -226,7 +241,7 @@ class CitaClient:
 
         return r
 
-    def call_readonly_func(self, contract_addr: PARAM, func_addr: PARAM, param: PARAM = b'', from_addr: PARAM = b'', block_number: str = 'latest') -> bytes:
+    def call_readonly_func(self, contract_addr: PARAM, func_addr: PARAM, param: PARAM = b'', from_addr: PARAM = b'') -> bytes:
         """
         调用合约的只读函数.
 
@@ -234,7 +249,6 @@ class CitaClient:
         :param func_addr: 合约内的函数地址, 4字节
         :param param: 合约构造函数的参数经encode_param编码后的bytes. 无参数用 b''
         :param from_addr: 调用者的地址, 默认是 b''
-        :param block_number: 区块高度, 可以是一个'0x'开头的高度字符串, 也可以是'latest'或'pending', 默认是'latest'
         :return: 返回值编码的bytes
         """
         # 构造 CallRequest
@@ -253,7 +267,7 @@ class CitaClient:
             data += param_to_str(param)[2:]
         req['data'] = data
 
-        r = self._jsonrpc('call', [req, block_number])
+        r = self._jsonrpc('call', [req, self.call_mode])
         assert isinstance(r, str) and r.startswith('0x')
         return param_to_bytes(r)
 
@@ -318,7 +332,7 @@ class CitaClient:
     #         data += param_to_str(param)[2:]
     #     req['data'] = data
 
-    #     r = self._jsonrpc('estimateQuota', [req, 'latest'])
+    #     r = self._jsonrpc('estimateQuota', [req, self.call_mode])
     #     assert isinstance(r, str) and r.startswith('0x')
     #     return ast.literal_eval(r)
 
@@ -331,7 +345,7 @@ class CitaClient:
         """
         addr = param_to_str(contract_addr)
         assert len(addr) == 42
-        r = self._jsonrpc('getCode', [addr, 'latest'])
+        r = self._jsonrpc('getCode', [addr, self.call_mode])
         assert isinstance(r, str) and r.startswith('0x')
         if r == '0x':  # 合约不存在
             return b''
@@ -347,7 +361,7 @@ class CitaClient:
         """
         addr = param_to_str(contract_addr)
         assert len(addr) == 42
-        r = self._jsonrpc('getAbi', [addr, 'latest'])
+        r = self._jsonrpc('getAbi', [addr, self.call_mode])
         assert isinstance(r, str) and r.startswith('0x')
         if r == '0x':  # 合约不存在或未绑定ABI
             return []
@@ -382,20 +396,17 @@ class CitaClient:
             return {}
         return cast(Dict, r)
 
-    def get_transaction_count(self, addr: PARAM, block_number: str = 'latest') -> int:
+    def get_transaction_count(self, addr: PARAM) -> int:
         """
         获取指定账户发起的交易数量.
 
         :param addr: 账户地址, 20字节
-        :param block_number: 区块高度, 可以是一个'0x'开头的高度字符串, 也可以是'latest'或'pending', 默认是'latest'
         :return: 交易数量
         """
         addr_ = param_to_str(addr)
         assert len(addr) == 40 + 2
-        if (block_number not in ('latest', 'pending')) and (not block_number.startswith('0x')):
-            raise ValueError("not supported block_number!")
 
-        r = self._jsonrpc('getTransactionCount', [addr_, block_number])
+        r = self._jsonrpc('getTransactionCount', [addr_, self.call_mode])
         if not r or r == '0x':
             return 0
         assert isinstance(r, str)
@@ -582,16 +593,6 @@ class ContractProxy:
         self.client__ = client
         self.private_key__ = private_key
         self.contract_addr__ = contract_addr
-        self.call_mode__ = 'latest'
-
-    def set_call_mode(self, mode):
-        """
-        设置读取只读方法时, 是使用已确认区块的数据, 还是待确认区块的数据.
-
-        :param mode: 默认'latest', 使用已确认区块; 'pending', 使用待确认区块.
-        """
-        assert mode in ('latest', 'pending')
-        self.call_mode__ = mode
 
     def do_call_func__(self, func_addr: str, args):
         """
@@ -612,7 +613,7 @@ class ContractProxy:
             return self.client__.call_func(self.private_key__, self.contract_addr__, func_addr, param=arg_bytes, quota=abi.quota)
 
         # 只读方法调用, 返回结果
-        return_bytes = self.client__.call_readonly_func(self.contract_addr__, func_addr, param=arg_bytes, block_number=self.call_mode__)
+        return_bytes = self.client__.call_readonly_func(self.contract_addr__, func_addr, param=arg_bytes)
         return decode_param(abi.return_types, return_bytes)
 
     def get_tx_code(self, func_name_or_addr: str, args=()) -> str:
