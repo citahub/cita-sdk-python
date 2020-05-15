@@ -388,6 +388,16 @@
     200
 
 
+设置调用模式
+~~~~~~~~~~~~~~~
+
+在调用合约的只读方法时, 默认会使用已共识的区块信息, 即 ``latest`` . 但也可以设置为使用刚出块还未共识的区块信息, 即 ``pending`` . 这个模式适合于只有一个CITA节点或单元测试. 可以通过 :meth:`~cita.CitaClient.set_call_mode` 进行设置. 设置后会影响由此实例发起的之后所有的调用.
+
+    >>> from cita import CitaClient, ContractClass
+    >>> client = CitaClient('http://127.0.0.1:1337')
+    >>> client.set_call_mode('pending')
+
+
 使用ContractClass
 -----------------------------
 
